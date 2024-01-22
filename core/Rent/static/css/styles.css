@@ -1,0 +1,8 @@
+/* styles.css */
+
+body {
+    background-image: url('/static/images/background.jpg'); /* Adjust the path to your image */
+    background-size: cover;
+    background-repeat: no-repeat;
+    /* Other background properties */
+}

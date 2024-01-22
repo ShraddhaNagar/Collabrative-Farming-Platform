@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% block start %}
+    <center><h1>Payment</h1></center>
+
+    <!-- Product details -->
+    <h2>Payment Details for Resource: {{ resource.resource_name }}</h2>
+    <p>Resource Description: {{ resource.resource_description }}</p>
+    <p>Price: {{ resource.price }}</p>
+    <img src="/media/{{ resource.resource_image }}" style="height: 100px">
+
+    <h2>Added By:</h2>
+    <p>Added By: {{ added_by_user.first_name }} {{ added_by_user.last_name }}</p>
+    <p>Email: {{ added_by_user.email }}</p>
+    <p>Phone Number: {{ customer.phone_number }}</p>
+    
+
+    <h2>Address:</h2>
+    <p>Street: {{ address.street }}</p>
+    <p>City: {{ address.city }}</p>
+    <p>State: {{ address.state }}</p>
+    <p>Country: {{ address.country }}</p>
+
+
+    <h2>Date Selection</h2>
+<form id="rental-form">
+    <!-- Start Date -->
+    <label for="start_date">Start Date:</label>
+    <input type="date" id="start_date" name="start_date" min="{{ today|date:'Y-m-d' }}" required>
+
+    <!-- End Date -->
+    <label for="end_date">End Date:</label>
+    <input type="date" id="end_date" name="end_date" required>
+
+    <!-- Display Total Amount -->
+    <h2>Amount: ₹<span id="total_amount">0</span></h2>
+    <!-- Display 2% of Total Amount -->
+    <h2>Booking Cost: ₹<span id="five_percent">0</span></h2>
+</form>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function () {
+        // Retrieve price from the product details
+        const pricePerDay = parseInt("{{ resource.price }}");
+
+        // Function to calculate the amount
+        function calculateAmount() {
+            const startDate = new Date($('#start_date').val());
+            const endDate = new Date($('#end_date').val());
+            const today = new Date(); // Get today's date
+
+            // Validate if start date is before today's date
+            if (startDate < today) {
+                alert("Start date cannot be before today's date");
+                $('#start_date').val(""); // Clear the start date field
+                return;
+            }
+
+            // Validate end date not greater than start date
+            if (endDate < startDate) {
+                alert('End date should not be before the start date');
+                $('#end_date').val(""); // Clear the end date field
+                return;
+            }
+
+            // Calculate number of days
+            const oneDay = 24 * 60 * 60 * 1000; // hours*minutes*seconds*milliseconds
+            const diffDays = Math.round(Math.abs((endDate - startDate) / oneDay));
+
+            // Calculate total amount in rupees
+            const amount = diffDays * pricePerDay;
+
+            // Display the total amount
+            $('#total_amount').text(amount);
+
+            // Calculate 5% of total amount
+            const fivePercent = amount * 0.02;
+            $('#five_percent').text(fivePercent);
+        }
+
+        // Event listener for date changes
+        $('#start_date').on('change', calculateAmount);
+        $('#end_date').on('change', calculateAmount);
+
+        // Calculate amount initially
+        calculateAmount();
+
+        // Payment button click event
+        $('#pay-button').click(function (e) {
+            e.preventDefault(); // Prevent the default form submission
+
+            // Get the calculated amount
+            const amountToPay = $('#total_amount').text();
+
+            // Get 5% of the total amount
+            const fivePercent = $('#five_percent').text();
+
+            // Use 'amountToPay' and 'fivePercent' in your payment process or AJAX request
+            // ... (your existing payment code)
+            // Include 'amountToPay' and 'fivePercent' in your data for payment initiation
+            // For Razorpay, you can include them in the 'amount' field in your data
+            const amountInPaise = amountToPay * 100; // Convert to paise (Razorpay requires amount in smallest currency unit)
+
+            // Your existing AJAX payment initiation code (with 'amountInPaise' included)
+            // This is an example, replace it with your actual payment initiation logic
+            $.ajax({
+                type: "POST",
+                url: "/payment/initiate-payment/",
+                data: { amount: amountInPaise },
+                dataType: "json",
+                beforeSend: function(xhr) {
+                    xhr.setRequestHeader("X-CSRFToken", $("[name=csrfmiddlewaretoken]").val());
+                },
+                success: function(data) {
+                    // Initialize Razorpay Checkout with the received values (similar to your existing code)
+                    // Include the amount in the 'amount' field in the options object
+                    const options = {
+                        // Your existing Razorpay options...
+                        amount: amountInPaise,
+                        // ...rest of the options
+                    };
+
+                    const rzp = new Razorpay(options);
+                    rzp.open();
+                },
+                error: function(error) {
+                    console.error("Error initiating payment:", error);
+                }
+            });
+        });
+    });
+</script>
+
+<!-- templates/payment.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pay Less And Book Now</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+    <h1>Pay Less And Book Now</h1>
+    <form id="payment-form">
+        {% csrf_token %}
+        <label for="amount">Pay Booking cost(in INR):</label>
+        <input type="number" id="amount" name="amount" required>
+        <button type="button" id="pay-button">Pay Now</button>
+    </form>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $("#pay-button").click(function(e) {
+                e.preventDefault(); // Prevent the default form submission
+                
+                // Get the amount entered by the user
+                const amount = $("#amount").val();
+
+                // Make an AJAX request to initiate the payment
+                $.ajax({
+                    type: "POST",
+                    url: "/payment/initiate-payment/",
+                    data: { amount: amount },
+                    dataType: "json",
+                    beforeSend: function(xhr) {
+                        xhr.setRequestHeader("X-CSRFToken", $("[name=csrfmiddlewaretoken]").val());
+                    },
+                    success: function(data) {
+                        // Initialize Razorpay Checkout with the received values
+                        const options = {
+                            key: data.key,
+                            amount: data.amount,
+                            currency: data.currency,
+                            order_id: data.id,
+                            name: data.name,
+                            description: data.description,
+                            image: data.image,
+                            handler: function(response) {
+                                // Handle the payment success or failure and redirect accordingly
+                                if (response.razorpay_payment_id) {
+                                    // Payment successful, redirect to the success URL
+                                    window.location.href = "/payment/payment-success/";
+                                } else {
+                                    // Payment failed or canceled, redirect to the failure URL
+                                    window.location.href = "/payment/payment-failed/";
+                                }
+                            },
+                            prefill: {
+                                name: "Customer Name",
+                                email: "customer@example.com",
+                                contact: "customer_contact",
+                            },
+                        };
+
+                        const rzp = new Razorpay(options);
+                        rzp.open();
+                    },
+                    error: function(error) {
+                        console.error("Error initiating payment:", error);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+
+{% endblock %}

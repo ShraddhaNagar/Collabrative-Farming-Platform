@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block start %}
+
+<!-- {{request.user}} -->
+<h2> Hey {{request.user.first_name}},</h2>
+<h3>Welcome to Collaborative Farming Platform</h3>
+
+    <div class="mb-5">
+        <div class="mx-auto col-6">
+            <form>
+                {% csrf_token %}
+           <div class="mb-3">
+        <label for="exampleInputEmail1" class="form-label">Search Resource</label>
+        <input name="search" value="{{ resource.resource_name }}" type="text" class="form-control">
+            </div>
+            <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+        </div>
+    </div>
+
+      <table class="table mt-5">
+        <thead>
+            <tr>
+                <th scope="col">No.</th>
+                <th scope="col">Resources name</th>
+                <th scope="col">Resources Description</th>
+                <th scope="col">Price</th>
+                <th scope="col">Image</th>
+                <th scope="col">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for resource in resources %}
+                <tr>
+                    <th scope="row">{{ forloop.counter }}</th>
+                    <td>{{ resource.resource_name }}</td>
+                    <td>{{ resource.resource_description }}</td>
+                    <td>{{resource.price}}</td>
+                    <td>
+                        <img src="/media/{{ resource.resource_image }}" style="height: 100px"></td>
+                    <td>
+                        <a href="{% url 'payment' resource.id %}" class="btn btn-success">Confirm</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+
+        <!-- <a href="/payment/?resource_id={{ resource.id }}" class="btn btn-success">Confirm</a> -->
+
+    </table>
+    
+    </div>
+
+{% endblock %}
+
+
+
+<!-- get_resource.html -->
+<!-- <!DOCTYPE html>
+<html>
+<head>
+    <title>Resource List</title>
+</head>
+<body>
+    <h1>Resources</h1>
+
+    <table border="1">
+        <tr>
+            <th>Image</th>
+            <th>Name</th>
+            <th>Description</th>
+        </tr>
+        {% for resource in resources %}
+        <tr>
+            <td><img src="{{ resource.resource_image.url }}" alt="{{ resource.resource_name }}" width="100"></td>
+            <td>{{ resource.resource_name }}</td>
+            <td>{{ resource.resource_description }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="3">No resources available</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+</body>
+</html> -->
